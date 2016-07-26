@@ -1,0 +1,13 @@
+#######################################
+# Datatypes              (KEYWORD1)
+#######################################
+BMP085_BMP180             KEYWORD1
+
+#######################################
+# Methods and Functions  (KEYWORD2)
+#######################################
+begin                     KEYWORD2
+readTemperature           KEYWORD2
+readPressure              KEYWORD2
+calculateSeaLevelPressure KEYWORD2
+calculateAltitude         KEYWORD2
