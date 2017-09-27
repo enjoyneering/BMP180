@@ -63,7 +63,7 @@ bool BMP085_BMP180::begin(void)
 
   if (read8(BMP085_GET_ID) != BMP085_CHIP_ID) //safety check, make sure the sensor is connected
   {
-    #ifdef BMP085_BMP180
+    #ifdef BMP085_DEBUG_INFO
     Serial.println("BMP085/BMP180: can't find the sensor on the bus");
     #endif
     return false;
