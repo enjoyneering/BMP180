@@ -108,7 +108,7 @@ int32_t BMP085_BMP180::readPressure(void)
   X1 = ((int32_t)_cal_coeff.BMP_AC3 * B6) >> 13;
   X2 = ((int32_t)_cal_coeff.BMP_B1 * ((B6 * B6) >> 12)) >> 16;
   X3 = ((X1 + X2) + 2) >> 2;
-  B4 = ((uint32_t)_cal_coeff.BMP_AC4 * (X3 + 32768UL)) >> 15;
+  B4 = ((uint32_t)_cal_coeff.BMP_AC4 * (X3 + 32768)) >> 15;
   B7 = (UP - B3) * (50000UL >> _resolution);
 
   if (B7 < 0x80000000)
@@ -124,7 +124,7 @@ int32_t BMP085_BMP180::readPressure(void)
   X1 = (X1 * 3038) >> 16;
   X2 = (-7357 * pressure) >> 16;
 
-  return pressure = pressure + ((X1 + X2 + 3791L) >> 4);
+  return pressure = pressure + ((X1 + X2 + 3791) >> 4);
 }
 
 /**************************************************************************/
