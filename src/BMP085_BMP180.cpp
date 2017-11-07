@@ -18,7 +18,7 @@
   ATtiny85:                0(5)       2/A1(7)   (ATTinyCore  - https://github.com/SpenceKonde/ATTinyCore
                                                  & TinyWireM - https://github.com/SpenceKonde/TinyWireM)
   ESP8266 ESP-01:          GPIO0/D5   GPIO2/D3  (ESP8266Core - https://github.com/esp8266/Arduino)
-  Node_MCU 1.0:            GPIO4/D2   GPIO5/D1
+  NodeMCU 1.0:             GPIO4/D2   GPIO5/D1
   WeMos D1 Mini:           GPIO4/D2   GPIO5/D1
 
   NOTE: EOC  pin is not used, shows the end of conversion.
@@ -291,7 +291,7 @@ int32_t BMP085_BMP180::computeB5(int32_t UT)
 /**************************************************************************/
 uint8_t BMP085_BMP180::read8(uint8_t reg)
 {
-  uint8_t  pollCounter = BMP085_POLL_LIMIT;
+  int8_t  pollCounter = BMP085_POLL_LIMIT;
 
   do
   {
@@ -343,7 +343,7 @@ uint8_t BMP085_BMP180::read8(uint8_t reg)
 /**************************************************************************/
 uint16_t BMP085_BMP180::read16(uint8_t reg)
 {
-  uint8_t  pollCounter = BMP085_POLL_LIMIT;
+  int8_t   pollCounter = BMP085_POLL_LIMIT;
   uint16_t value       = 0;
 
   do
@@ -400,7 +400,7 @@ uint16_t BMP085_BMP180::read16(uint8_t reg)
 /**************************************************************************/
 void BMP085_BMP180::write8(uint8_t reg, uint8_t value)
 {
-  uint8_t pollCounter = BMP085_POLL_LIMIT;
+  int8_t pollCounter = BMP085_POLL_LIMIT;
 
   do
   {
