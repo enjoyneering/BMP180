@@ -135,7 +135,7 @@ void loop()
   lcd.print(F("hPa"));
   lcd.write(LCD_SPACE_SYMBOL);
 
-  lcd.printHorizontalGraph('T', 3, temperature, MAX_TEMPERATURE); //name of the bar, 3-rd row, current value, max. value
+  lcd.printHorizontalGraph('T', 3, temperature, MAX_TEMPERATURE); //name of the bar, 4-th row, current value, max. value
 
   delay(5000);
 }
