@@ -126,7 +126,7 @@ void loop()
   lcd.write(LCD_SPACE_SYMBOL);
 
   lcd.setCursor(2, 1);
-  lcd.print(getPressure_hPa());
+  lcd.print(myBMP.getPressure_hPa());
   lcd.print(F("hPa"));
   lcd.write(LCD_SPACE_SYMBOL);
 
