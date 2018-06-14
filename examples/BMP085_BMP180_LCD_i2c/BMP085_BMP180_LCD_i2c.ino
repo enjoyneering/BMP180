@@ -108,7 +108,7 @@ void setup()
   lcd.write(0);
 
   lcd.setCursor(0, 1);
-  lcd.write((uint8_t)1);
+  lcd.write(1);
 
   lcd.setCursor(0, 2);
   lcd.write(2);
