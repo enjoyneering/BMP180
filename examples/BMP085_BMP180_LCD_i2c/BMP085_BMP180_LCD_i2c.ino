@@ -45,7 +45,7 @@
 #define LCD_DEGREE_SYMBOL  0xDF //degree symbol from lcd ROM
 #define LCD_SPACE_SYMBOL   0x20 //space  symbol from lcd ROM
 
-#define MAX_TEMPERATURE    35   //max temp, deg.C
+#define MAX_TEMPERATURE    45   //max temp, deg.C
 
 const uint8_t icon_pressure[8]     PROGMEM = {0x04, 0x04, 0x15, 0x0E, 0x04, 0x00, 0x00, 0x1F}; //PROGMEM saves variable to flash & keeps dynamic memory free
 const uint8_t icon_see_pressure[8] PROGMEM = {0x04, 0x04, 0x15, 0x0E, 0x04, 0x00, 0x0A, 0x15};
@@ -99,9 +99,9 @@ void setup()
   lcd.clear();
 
   /* load custom symbol to CGRAM */
-  lcd.createChar(0, icon_temperature,  'F');                    //'F' - variable stored in flash
-  lcd.createChar(1, icon_pressure,     'F');
-  lcd.createChar(2, icon_see_pressure, 'F');
+  lcd.createChar(0, icon_temperature);                          //variable stored in flash
+  lcd.createChar(1, icon_pressure);
+  lcd.createChar(2, icon_see_pressure);
 
   /* prints static text */
   lcd.setCursor(0, 0);
