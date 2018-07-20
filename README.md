@@ -26,4 +26,5 @@ Tested on:
 - Arduino STM32
 
 *EOC  pin is not used, shows the end of conversion
+
 *XCLR pin is not used, reset pin
