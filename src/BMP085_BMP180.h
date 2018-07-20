@@ -1,148 +1,165 @@
 /***************************************************************************************************/
-/* 
-  This is an Arduino library for the BOSCH BMP085/BMP180 Barometric Pressure and Temperature sensor
+/*
+  This is an Arduino basic library for Bosch BMP180 & BMP085 barometric pressure &
+  temperature sensor
   
-  Range                 Max. Resolution   Max. Accuracy
-  30,000Pa..110,000Pa   -+1Pa             -+150Pa
-  0C..+65C              -+0.1C            -+1.0C
+  Range                 typ. resolution   typ. accuracy   typ. relative accuracy
+  30,000Pa..110,000Pa   ±1Pa              ±100Pa          ±12Pa
+  0°C..+65°C            ±0.1°C            ±1.0°C          xx
 
   written by : enjoyneering79
   sourse code: https://github.com/enjoyneering/
 
   This sensor uses I2C bus to communicate, specials pins are required to interface
+  Board:                                    SDA                    SCL
+  Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5
+  Mega2560, Due............................ 20                     21
+  Leonardo, Micro, ATmega32U4.............. 2                      3
+  Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7
+  Blue Pill, STM32F103xxxx boards.......... PB7*                   PB6*
+  ESP8266 ESP-01:.......................... GPIO0/D5               GPIO2/D3
+  NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1
+  ESP32.................................... GPIO21                 GPIO22
 
-  Connect chip to pins:    SDA        SCL
-  Uno, Mini, Pro:          A4         A5
-  Mega2560, Due:           20         21
-  Leonardo:                2          3
-  ATtiny85:                0(5)       2/A1(7)   (ATTinyCore  - https://github.com/SpenceKonde/ATTinyCore
-                                                 & TinyWireM - https://github.com/SpenceKonde/TinyWireM)
-  ESP8266 ESP-01:          GPIO0/D5   GPIO2/D3  (ESP8266Core - https://github.com/esp8266/Arduino)
-  NodeMCU 1.0:             GPIO4/D2   GPIO5/D1
-  WeMos D1 Mini:           GPIO4/D2   GPIO5/D1
+                                           *STM32F103xxxx pins PB6/PB7 are 5v tolerant, but
+                                            bi-directional logic level converter is recommended
 
-  NOTE: EOC  pin is not used, shows the end of conversion.
-        XCLR pin is not used, reset pin.
+  NOTE:
+  - EOC  pin is not used, shows the end of conversion
+  - XCLR pin is not used, reset pin
 
-  BSD license, all text above must be included in any redistribution
+  Frameworks & Libraries:
+  ATtiny Core           - https://github.com/SpenceKonde/ATTinyCore
+  ESP32 Core            - https://github.com/espressif/arduino-esp32
+  ESP8266 Core          - https://github.com/esp8266/Arduino
+  ESP8266 I2C lib fixed - https://github.com/enjoyneering/ESP8266-I2C-Driver
+  STM32 Core            - https://github.com/rogerclarkmelbourne/Arduino_STM32
+
+  GNU GPL license, all text above must be included in any redistribution, see link below for details:
+  - https://www.gnu.org/licenses/licenses.html
 */
 /***************************************************************************************************/
 
-#ifndef BMP085_BMP180_h
-#define BMP085_BMP180_h
+#ifndef BMP180_h
+#define BMP180_h
   
-#if ARDUINO >= 100 && ARDUINO >= 100
+#if defined(ARDUINO) && ARDUINO >= 100 //arduino core v1.0 or later
 #include <Arduino.h>
 #else
 #include <WProgram.h>
 #endif
 
-#if defined(__AVR_ATtinyX4__) || defined(__AVR_ATtinyX5__) || defined(__AVR_ATtinyX313__)
-#include <TinyWireM.h>
-#define  Wire TinyWireM
-#else
-#include <Wire.h>
-#endif
-
 #if defined(__AVR__)
-#include <avr/pgmspace.h>
+#include <avr/pgmspace.h>              //use for PROGMEM Arduino AVR
 #elif defined(ESP8266)
-#include <pgmspace.h>
+#include <pgmspace.h>                  //use for PROGMEM Arduino ESP8266
+#elif defined(_VARIANT_ARDUINO_STM32_)
+#include <avr/pgmspace.h>              //use for PROGMEM Arduino STM32
 #endif
 
-//#define BMP085_DEBUG_INFO             //enable/disable serial debug info
+#include <Wire.h>
 
-#define BMP085_ADDRESS           0x77   //i2c address
-
-#define BMP085_CHIP_ID           0x55   //ID number
-
-/* registers */
-#define BMP085_CAL_AC1           0xAA  //ac1 16-bit calibration data register
-#define BMP085_CAL_AC2           0xAC  //ac2 16-bit calibration data register
-#define BMP085_CAL_AC3           0xAE  //ac3 16-bit calibration data register
-#define BMP085_CAL_AC4           0xB0  //ac4 16-bit calibration data register
-#define BMP085_CAL_AC5           0xB2  //ac5 16-bit calibration data register
-#define BMP085_CAL_AC6           0xB4  //ac6 16-bit calibration data register
-#define BMP085_CAL_B1            0xB6  //b1  16-bit calibration data register
-#define BMP085_CAL_B2            0xB8  //b2  16-bit calibration data register
-#define BMP085_CAL_MB            0xBA  //mb  16-bit calibration data register
-#define BMP085_CAL_MC            0xBC  //mc  16-bit calibration data register
-#define BMP085_CAL_MD            0xBE  //md  16-bit calibration data register
-
-#define BMP085_GET_ID            0xD0  //device ID register
-#define BMP085_START_SOFT_RESET  0xE0  //soft reset register
-#define BMP085_GET_SOFT_RESET    0xB6  //soft reset control
-
-#define BMP085_START_MEASURMENT  0xF4  //start measurment register
-#define BMP085_READ_RESULT       0xF6  //read  result register
-#define BMP085_GET_TEMPERATURE   0x2E  //start temperature control
-#define BMP085_GET_PRESSURE      0x34  //start pressure control
-
-/* misc */
-#define BMP085_ERROR             0xFF  //returns 255, if communication error is occurred
-#define BMP085_POLL_LIMIT        8     //i2c retry limit
-
-/* resolution and power controls */
+/* resolutions */
 typedef enum
 {
-  BMP085_ULTRALOWPOWER = 0x00,         //low power mod,
-  BMP085_STANDARD      = 0x01,         //standard mod
-  BMP085_HIGHRES       = 0x02,         //hi resesolution mode
-  BMP085_ULTRAHIGHRES  = 0x03          //ultra hi resesolution mode
+  BMP180_ULTRALOWPOWER = 0x00, //low power             mode, oss0
+  BMP180_STANDARD      = 0x01, //standard              mode, oss1
+  BMP180_HIGHRES       = 0x02, //high resolution       mode, oss2
+  BMP180_ULTRAHIGHRES  = 0x03  //ultra high resolution mode, oss3
 }
-BMP085_RESOLUTION;
+BMP180_RESOLUTION;
 
-/* calibration coefficients */
+/* calibration registers */
+typedef enum
+{
+  BMP180_CAL_AC1 =               0xAA,  //ac1 pressure    computation
+  BMP180_CAL_AC2 =               0xAC,  //ac2 pressure    computation
+  BMP180_CAL_AC3 =               0xAE,  //ac3 pressure    computation
+  BMP180_CAL_AC4 =               0xB0,  //ac4 pressure    computation
+  BMP180_CAL_AC5 =               0xB2,  //ac5 temperature computation
+  BMP180_CAL_AC6 =               0xB4,  //ac6 temperature computation
+  BMP180_CAL_B1  =               0xB6,  //b1  pressure    computation
+  BMP180_CAL_B2  =               0xB8,  //b2  pressure    computation
+  BMP180_CAL_MB  =               0xBA,  //mb
+  BMP180_CAL_MC  =               0xBC,  //mc  temperature computation
+  BMP180_CAL_MD  =               0xBE   //md  temperature computation
+}
+BMP180_CAL_REGISTERS;
+
+#define BMP180_GET_ID            0xD0   //device id register
+#define BMP180_GET_VERSION       0xD1   //device version register
+
+#define BMP180_START_SOFT_RESET  0xE0   //soft reset register
+#define BMP180_GET_SOFT_RESET    0xB6   //soft reset control
+
+#define BMP180_START_MEASURMENT  0xF4   //start measurment  register
+#define BMP180_READ_ADC_MSB      0xF6   //read adc msb  register
+#define BMP180_READ_ADC_LSB      0xF7   //read adc lsb  register
+#define BMP180_READ_ADC_XLSB     0xF8   //read adc xlsb register
+
+/* BMP180_START_MEASURMENT controls */
+#define BMP180_GET_TEMPERATURE   0x2E   //get temperature control
+#define BMP180_GET_PRESSURE_OSS0 0x34   //get pressure oversampling 1 time/oss0 control
+#define BMP180_GET_PRESSURE_OSS1 0x74   //get pressure oversampling 2 time/oss1 control
+#define BMP180_GET_PRESSURE_OSS2 0xB4   //get pressure oversampling 4 time/oss2 control
+#define BMP180_GET_PRESSURE_OSS3 0xF4   //get pressure oversampling 8 time/oss3 control
+
+/* misc */
+#define BMP180_ADDRESS           0x77   //i2c address
+#define BMP180_CHIP_ID           0x55   //id number
+
+#define BMP180_ERROR             255    //returns 255, if communication error is occurred
+
+/* to store calibration coefficients */
 typedef struct
 {
-  int16_t  BMP_AC1 = 0;
-  int16_t  BMP_AC2 = 0;
-  int16_t  BMP_AC3 = 0;
-  uint16_t BMP_AC4 = 0;
-  uint16_t BMP_AC5 = 0;
-  uint16_t BMP_AC6 = 0;
+  int16_t  bmpAC1 = 0;
+  int16_t  bmpAC2 = 0;
+  int16_t  bmpAC3 = 0;
+  uint16_t bmpAC4 = 0;
+  uint16_t bmpAC5 = 0;
+  uint16_t bmpAC6 = 0;
 
-  int16_t  BMP_B1 = 0;
-  int16_t  BMP_B2 = 0;
+  int16_t  bmpB1  = 0;
+  int16_t  bmpB2  = 0;
 
-  int16_t  BMP_MB = 0;
-  int16_t  BMP_MC = 0;
-  int16_t  BMP_MD = 0;
+  int16_t  bmpMB  = 0;
+  int16_t  bmpMC  = 0;
+  int16_t  bmpMD  = 0;
 }
-BMP085_CAL_COEFF;
+BMP180_CAL_COEFF;
 
 
-class BMP085_BMP180
+class BMP180
 {
  public:
-  BMP085_BMP180(BMP085_RESOLUTION = BMP085_ULTRAHIGHRES); //BMP085_ULTRAHIGHRES by default
+  BMP180(BMP180_RESOLUTION = BMP180_ULTRAHIGHRES);          //BMP180_ULTRAHIGHRES, by default
 
   #if defined(ESP8266)
   bool    begin(uint8_t sda = SDA, uint8_t scl = SCL);
   #else
   bool    begin(void);
   #endif
-  float   readTemperature(void);                          //in deg.C
-  int32_t readPressure(void);                             //in Pa
-  float   getHectoPascalPressure(void);                   //in hPa
-  float   getMillimeterMercuryPressure(void);             //in mmHg
-  int32_t getSeaLevelPressure(float altitude = 80);       //altitude is 80 meters by default
-  float   getAltitude(float sealevelPressure);
+  int32_t getPressure(void);                               //in Pa
+  float   getTemperature(void);                            //in °C
+  int32_t getSeaLevelPressure(int16_t trueAltitude = 115); //in Pa, by default true altitude id 115 meters
   void    softReset(void);
+  uint8_t readFirmwareVersion(void);
+  uint8_t readDeviceID(void);
 
-  
+
  private:
-  BMP085_CAL_COEFF _cal_coeff;
+  BMP180_CAL_COEFF _cal_coeff;
 
   uint8_t  _resolution;
 
-  void     readCalibrationCoefficients(void);
+  bool     readCalibrationCoefficients(void);
   uint16_t readRawTemperature(void);
   uint32_t readRawPressure(void);
   int32_t  computeB5(int32_t UT);
-  uint8_t  read8(uint8_t addr);
-  uint16_t read16(uint8_t addr);
-  void     write8(uint8_t addr, uint8_t data);
+  uint8_t  read8(uint8_t reg);
+  uint16_t read16(uint8_t reg);
+  bool     write8(uint8_t reg, uint8_t control);
 };
 
 #endif
