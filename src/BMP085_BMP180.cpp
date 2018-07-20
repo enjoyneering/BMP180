@@ -244,7 +244,7 @@ uint8_t BMP180::readDeviceID(void)
 /**************************************************************************/
 bool BMP180::readCalibrationCoefficients()
 {
-  uint16_t value = 0;
+  int32_t value = 0;
 
   for (uint8_t reg = BMP180_CAL_AC1; reg <= BMP180_CAL_MD; reg++)
   {
