@@ -1,271 +1,390 @@
 /***************************************************************************************************/
-/* 
-  This is an Arduino library for the BOSCH BMP085/BMP180 Barometric Pressure and Temperature sensor
-
-  Range                 Max. Resolution   Max. Accuracy
-  30,000Pa..110,000Pa   -+1Pa             -+150Pa
-  0C..+65C              -+0.1C            -+1.0C
+/*
+  This is an Arduino basic library for Bosch BMP180 & BMP085 barometric pressure &
+  temperature sensor
+  
+  Range                 typ. resolution   typ. accuracy   typ. relative accuracy
+  30,000Pa..110,000Pa   ±1Pa              ±100Pa          ±12Pa
+  0°C..+65°C            ±0.1°C            ±1.0°C          xx
 
   written by : enjoyneering79
   sourse code: https://github.com/enjoyneering/
 
   This sensor uses I2C bus to communicate, specials pins are required to interface
+  Board:                                    SDA                    SCL
+  Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5
+  Mega2560, Due............................ 20                     21
+  Leonardo, Micro, ATmega32U4.............. 2                      3
+  Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7
+  Blue Pill, STM32F103xxxx boards.......... PB7*                   PB6*
+  ESP8266 ESP-01:.......................... GPIO0/D5               GPIO2/D3
+  NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1
+  ESP32.................................... GPIO21                 GPIO22
 
-  Connect chip to pins:    SDA        SCL
-  Uno, Mini, Pro:          A4         A5
-  Mega2560, Due:           20         21
-  Leonardo:                2          3
-  ATtiny85:                0(5)       2/A1(7)   (ATTinyCore  - https://github.com/SpenceKonde/ATTinyCore
-                                                 & TinyWireM - https://github.com/SpenceKonde/TinyWireM)
-  ESP8266 ESP-01:          GPIO0/D5   GPIO2/D3  (ESP8266Core - https://github.com/esp8266/Arduino)
-  NodeMCU 1.0:             GPIO4/D2   GPIO5/D1
-  WeMos D1 Mini:           GPIO4/D2   GPIO5/D1
+                                           *STM32F103xxxx pins PB6/PB7 are 5v tolerant, but
+                                            bi-directional logic level converter is recommended
 
-  NOTE: EOC  pin is not used, shows the end of conversion.
-        XCLR pin is not used, reset pin.
+  NOTE:
+  - EOC  pin is not used, shows the end of conversion
+  - XCLR pin is not used, reset pin
 
-  BSD license, all text above must be included in any redistribution
+  Frameworks & Libraries:
+  ATtiny Core           - https://github.com/SpenceKonde/ATTinyCore
+  ESP32 Core            - https://github.com/espressif/arduino-esp32
+  ESP8266 Core          - https://github.com/esp8266/Arduino
+  ESP8266 I2C lib fixed - https://github.com/enjoyneering/ESP8266-I2C-Driver
+  STM32 Core            - https://github.com/rogerclarkmelbourne/Arduino_STM32
+
+  GNU GPL license, all text above must be included in any redistribution, see link below for details:
+  - https://www.gnu.org/licenses/licenses.html
 */
 /***************************************************************************************************/
 
-#include "BMP085_BMP180.h"
+#include "BMP180.h"
 
 
 /**************************************************************************/
 /*
     Constructor
+
+    NOTE:
+    - BMP180_ULTRALOWPOWER, pressure oversampled 1 time  & consumption 3μA
+    - BMP180_STANDARD,      pressure oversampled 2 times & consumption 5μA
+    - BMP180_HIGHRES,       pressure oversampled 4 times & consumption 7μA
+    - BMP180_ULTRAHIGHRES,  pressure oversampled 8 times & consumption 12μA
 */
 /**************************************************************************/
-BMP085_BMP180::BMP085_BMP180(BMP085_RESOLUTION res_mode)
+BMP180::BMP180(BMP180_RESOLUTION res_mode)
 {
   _resolution = res_mode;
 }
 
 /**************************************************************************/
 /*
+    begin()
+
     Initializes I2C and configures the sensor
 
     NOTE: call this function before doing anything else
 */
 /**************************************************************************/
 #if defined(ESP8266)
-bool BMP085_BMP180::begin(uint8_t sda, uint8_t scl)
+bool BMP180::begin(uint8_t sda, uint8_t scl)
 {
   Wire.begin(sda, scl);
-  Wire.setClock(100000UL);                    //experimental! ESP8266 i2c bus speed: 100kHz..400kHz/100000UL..400000UL, default 100000UL
-  Wire.setClockStretchLimit(230);             //experimental! default 230
+  Wire.setClock(100000UL);                                  //experimental! ESP8266 i2c bus speed: 100kHz..400kHz/100000UL..400000UL, default 100000UL
+  Wire.setClockStretchLimit(230);                           //experimental! default 230usec
 #else
-bool BMP085_BMP180::begin(void) 
+bool BMP180::begin(void) 
 {
   Wire.begin();
-  Wire.setClock(100000UL);                    //experimental! AVR i2c bus speed: 31kHz..400kHz/31000UL..400000UL, default 100000UL
+  Wire.setClock(100000UL);                                  //experimental! AVR i2c bus speed: 31kHz..400kHz/31000UL..400000UL, default 100000UL
 #endif
 
-  if (read8(BMP085_GET_ID) != BMP085_CHIP_ID) //safety check, make sure the sensor is connected
-  {
-    #ifdef BMP085_DEBUG_INFO
-    Serial.println("BMP085/BMP180: can't find the sensor on the bus");
-    #endif
-    return false;
-  }
+  if (read8(BMP180_GET_ID) != BMP180_CHIP_ID) return false; //safety check, make sure the sensor is connected
 
-  readCalibrationCoefficients();
-
-  return true;
+  return readCalibrationCoefficients();                     //safety check, make sure all coefficients are valid
 }
 
 /**************************************************************************/
 /*
-    Reads Pressure in Pa
+    getPressure()
+
+    Calculates compensated pressure, in Pa
+
+    NOTE:
+    - resolutin ±1Pa with accuracy ±150Pa at range 30,000Pa..110,000Pa
 */
 /**************************************************************************/
-int32_t BMP085_BMP180::readPressure(void)
+int32_t BMP180::getPressure(void)
 {
   int32_t  UT       = 0;
   int32_t  UP       = 0;
   int32_t  B3       = 0;
   int32_t  B5       = 0;
   int32_t  B6       = 0;
-  int32_t  X1       = 0; 
-  int32_t  X2       = 0; 
+  int32_t  X1       = 0;
+  int32_t  X2       = 0;
   int32_t  X3       = 0;
   int32_t  pressure = 0;
   uint32_t B4       = 0;
   uint32_t B7       = 0;
 
-  UT = readRawTemperature(); //temperature data, 16bit
-  UP = readRawPressure();    //pressure data,    16bit to 19bit
+  UT = readRawTemperature();                                             //read uncompensated temperature, 16-bit
+  if (UT == BMP180_ERROR) return BMP180_ERROR;                           //error handler, collision on i2c bus
+
+  UP = readRawPressure();                                                //read uncompensated pressure, 19-bit
+  if (UP == BMP180_ERROR) return BMP180_ERROR;                           //error handler, collision on i2c bus
 
   B5 = computeB5(UT);
 
   /* pressure calculation */
   B6 = B5 - 4000;
-  X1 = ((int32_t)_cal_coeff.BMP_B2 * ((B6 * B6) >> 12)) >> 11;
-  X2 = ((int32_t)_cal_coeff.BMP_AC2 * B6) >> 11;
+  X1 = ((int32_t)_cal_coeff.bmpB2 * ((B6 * B6) >> 12)) >> 11;
+  X2 = ((int32_t)_cal_coeff.bmpAC2 * B6) >> 11;
   X3 = X1 + X2;
-  B3 = ((((int32_t)_cal_coeff.BMP_AC1 * 4 + X3) << _resolution) + 2) / 4;
+  B3 = ((((int32_t)_cal_coeff.bmpAC1 * 4 + X3) << _resolution) + 2) / 4;
 
-  X1 = ((int32_t)_cal_coeff.BMP_AC3 * B6) >> 13;
-  X2 = ((int32_t)_cal_coeff.BMP_B1 * ((B6 * B6) >> 12)) >> 16;
+  X1 = ((int32_t)_cal_coeff.bmpAC3 * B6) >> 13;
+  X2 = ((int32_t)_cal_coeff.bmpB1 * ((B6 * B6) >> 12)) >> 16;
   X3 = ((X1 + X2) + 2) >> 2;
-  B4 = ((uint32_t)_cal_coeff.BMP_AC4 * (X3 + 32768)) >> 15;
+  B4 = ((uint32_t)_cal_coeff.bmpAC4 * (X3 + 32768L)) >> 15;
   B7 = (UP - B3) * (50000UL >> _resolution);
 
-  if (B7 < 0x80000000)
-  {
-    pressure = (B7 * 2) / B4;
-  } 
-  else 
-  {
-    pressure = (B7 / B4) * 2;
-  }
+  if   (B7 < 0x80000000) pressure = (B7 * 2) / B4;
+  else                   pressure = (B7 / B4) * 2;
 
-  X1 = (pressure >> 8) * (pressure >> 8);
-  X1 = (X1 * 3038) >> 16;
-  X2 = (-7357 * pressure) >> 16;
+  X1 = pow((pressure >> 8), 2);
+  X1 = (X1 * 3038L) >> 16;
+  X2 = (-7357L * pressure) >> 16;
 
-  return pressure = pressure + ((X1 + X2 + 3791) >> 4);
+  return pressure = pressure + ((X1 + X2 + 3791L) >> 4);
 }
 
 /**************************************************************************/
 /*
-    Reads Temperature in deg.C
+    getTemperature()
+
+    Calculates compensated temperature, in °C
+
+    NOTE:
+    - resolution ±0.1°C with accuracy ±1.0°C at range 0°C..+65°C
 */
 /**************************************************************************/
-float BMP085_BMP180::readTemperature(void)
+float BMP180::getTemperature(void)
 {
-  return (float)((computeB5(readRawTemperature()) + 8) >> 4) / 10; //temperature
+  int16_t rawTemperature = readRawTemperature();
+
+  if (rawTemperature == BMP180_ERROR) return BMP180_ERROR;                                       //error handler, collision on i2c bus
+                                      return (float)((computeB5(rawTemperature) + 8) >> 4) / 10;
 }
 
 /**************************************************************************/
 /*
-    Calculates Pressure, in hPa
+    getSeaLevelPressure()
+
+    Converts current pressure to sea level pressure at specific true
+    altitude, in Pa
+
+    NOTE:
+    - true altitude is the actual elevation above sea level, to find out
+      your current true altitude do search with google earth or gps
+    - see level pressure is commonly used in weather reports & forecasts
+      to compensate current true altitude
+    - for example, we know that a sunny day happens if the current sea
+      level pressure is 250Pa above the average sea level pressure of
+      101325 Pa, so by converting the current pressure to sea level &
+      comparing it with an average sea level pressure we can instantly
+      predict the weather conditions
 */
 /**************************************************************************/
-float BMP085_BMP180::getHectoPascalPressure(void)
+int32_t BMP180::getSeaLevelPressure(int16_t trueAltitude)
 {
-  return (float)readPressure() / 100;
+  int32_t pressure = getPressure();
+
+  if (pressure == BMP180_ERROR) return BMP180_ERROR;
+                                return (pressure / pow(1.0 - (float)trueAltitude / 44330, 5.255));
 }
 
 /**************************************************************************/
 /*
-    Calculates Pressure, in mmHg
-*/
-/**************************************************************************/
-float BMP085_BMP180::getMillimeterMercuryPressure(void)
-{
-  return (float)readPressure() * 0.0075;
-}
+    softReset()
 
-/**************************************************************************/
-/*
-    Calculates altitude at specific sea level pressure in meters
-
-    NOTE: sea level pressure in Pa
-*/
-/**************************************************************************/
-float BMP085_BMP180::getAltitude(float seaLevelPressure)
-{
-  return 44330.0 * (1.0 - pow(readPressure() / seaLevelPressure, 0.1903));
-}
-
-/**************************************************************************/
-/*
-    Calculates sea level pressure at specific altitude, in Pa
-
-    Use the see level pressure to compensate current altitude, commonly used 
-    in weather reports
-
-    NOTE: altitude in meters, 80 meters by default
-*/
-/**************************************************************************/
-int32_t BMP085_BMP180::getSeaLevelPressure(float altitude)
-{
-  return (readPressure() / pow(1.0 - altitude / 44330, 5.255));
-}
-
-/**************************************************************************/
-/*
     Soft reset
 
-    Performs the same sequence as power on reset.
+    NOTE:
+    - performs the same sequence as power on reset
 */
 /**************************************************************************/
-void BMP085_BMP180::softReset(void)
+void BMP180::softReset(void)
 {
-  write8(BMP085_START_SOFT_RESET, BMP085_GET_SOFT_RESET);
+  write8(BMP180_START_SOFT_RESET, BMP180_GET_SOFT_RESET);
 }
 
 /**************************************************************************/
 /*
-    Reads factory calibration coefficients
+    readFirmwareVersion()
 
-    Before the first temperature & pressure calculation master reads out
-    the calibration coefficients E2PROM.
+    Reads ML & AL Version
+
+    NOTE:
+    - ML version is LSB, 4-bit..0-bit
+    - AL version is MSB, 7-bit..5-bit
 */
 /**************************************************************************/
-void BMP085_BMP180::readCalibrationCoefficients()
+uint8_t BMP180::readFirmwareVersion(void)
 {
-  _cal_coeff.BMP_AC1 = read16(BMP085_CAL_AC1);
-  _cal_coeff.BMP_AC2 = read16(BMP085_CAL_AC2);
-  _cal_coeff.BMP_AC3 = read16(BMP085_CAL_AC3);
-  _cal_coeff.BMP_AC4 = read16(BMP085_CAL_AC4);
-  _cal_coeff.BMP_AC5 = read16(BMP085_CAL_AC5);
-  _cal_coeff.BMP_AC6 = read16(BMP085_CAL_AC6);
-
-  _cal_coeff.BMP_B1 = read16(BMP085_CAL_B1);
-  _cal_coeff.BMP_B2 = read16(BMP085_CAL_B2);
-
-  _cal_coeff.BMP_MB = read16(BMP085_CAL_MB);
-  _cal_coeff.BMP_MC = read16(BMP085_CAL_MC);
-  _cal_coeff.BMP_MD = read16(BMP085_CAL_MD);
+  return read8(BMP180_GET_VERSION);
 }
 
 /**************************************************************************/
 /*
-    Reads raw temperature
+    readDeviceID()
+
+    Reads chip ID
 */
 /**************************************************************************/
-uint16_t BMP085_BMP180::readRawTemperature(void)
+uint8_t BMP180::readDeviceID(void)
 {
-  write8(BMP085_START_MEASURMENT, BMP085_GET_TEMPERATURE);
-  delay(5);                                                //measurement delay
-
-  return read16(BMP085_READ_RESULT);
+  if (read8(BMP180_GET_ID) == BMP180_CHIP_ID) return 180;
+                                              return false;
 }
 
 /**************************************************************************/
 /*
-    Reads raw pressure
+    readCalibrationCoefficients()
+
+    Reads factory calibration coefficients from E2PROM
+
+    NOTE:
+    - every sensor module has individual calibration coefficients
+    - before first temperature & pressure calculation master have to read
+      calibration coefficients from 176-bit E2PROM
 */
 /**************************************************************************/
-uint32_t BMP085_BMP180::readRawPressure(void)
+bool BMP180::readCalibrationCoefficients()
 {
+  uint16_t value = 0;
+
+  for (uint8_t reg = BMP180_CAL_AC1; reg <= BMP180_CAL_MD; reg++)
+  {
+    value = read16(reg);
+
+    if (value == BMP180_ERROR) return false; //error handler, collision on i2c bus
+
+    switch (reg)
+    {
+      case BMP180_CAL_AC1:                   //used for pressure computation
+        _cal_coeff.bmpAC1 = value;
+        break;
+
+      case BMP180_CAL_AC2:                   //used for pressure computation
+        _cal_coeff.bmpAC2 = value;
+        break;
+
+      case BMP180_CAL_AC3:                   //used for pressure computation
+        _cal_coeff.bmpAC3 = value;
+        break;
+
+      case BMP180_CAL_AC4:                   //used for pressure computation
+        _cal_coeff.bmpAC4 = value;
+        break;
+
+      case BMP180_CAL_AC5:                   //used for temperature computation
+        _cal_coeff.bmpAC5 = value;
+        break;
+
+      case BMP180_CAL_AC6:                   //used for temperature computation
+        _cal_coeff.bmpAC6 = value;
+        break;
+
+      case BMP180_CAL_B1:                    //used for pressure computation
+        _cal_coeff.bmpB1 = value;
+        break;
+
+      case BMP180_CAL_B2:                    //used for pressure computation
+        _cal_coeff.bmpB2 = value;
+        break;
+
+      case BMP180_CAL_MB:                    //???
+        _cal_coeff.bmpMB = value;
+        break;
+
+      case BMP180_CAL_MC:                    //used for temperature computation
+        _cal_coeff.bmpMC = value;
+        break;
+
+      case BMP180_CAL_MD:                    //used for temperature computation
+        _cal_coeff.bmpMD = value;
+        break;
+    }
+  }
+
+  return true;
+}
+
+/**************************************************************************/
+/*
+    readRawTemperature()
+
+    Reads raw/uncompensated temperature value, 16-bit
+*/
+/**************************************************************************/
+uint16_t BMP180::readRawTemperature(void)
+{
+  /* send temperature measurement command */
+  if (write8(BMP180_START_MEASURMENT, BMP180_GET_TEMPERATURE) != true) return BMP180_ERROR; //error handler, collision on i2c bus
+
+  /* set measurement delay */
+  delay(5);
+
+  /* read result */
+  return read16(BMP180_READ_ADC_MSB);                                                       //reads msb + lsb
+}
+
+/**************************************************************************/
+/*
+    readRawPressure()
+
+    Reads raw/uncompensated pressure value, 19-bits
+*/
+/**************************************************************************/
+uint32_t BMP180::readRawPressure(void)
+{
+  uint8_t  regControl  = 0;
   uint32_t rawPressure = 0;
 
-  write8(BMP085_START_MEASURMENT, BMP085_GET_PRESSURE + (_resolution << 6));
+  /* convert resolution to register control */
+  switch (_resolution)
+  {
+    case BMP180_ULTRALOWPOWER:               //oss0
+      regControl = BMP180_GET_PRESSURE_OSS0;
+      break;
+
+    case BMP180_STANDARD:                    //oss1
+      regControl = BMP180_GET_PRESSURE_OSS1;
+      break;
+
+    case BMP180_HIGHRES:                     //oss2
+      regControl = BMP180_GET_PRESSURE_OSS2;
+      break;
+
+    case BMP180_ULTRAHIGHRES:                //oss3
+      regControl = BMP180_GET_PRESSURE_OSS2;
+      break;
+  }
+
+  /* send pressure measurement command */
+  if (write8(BMP180_START_MEASURMENT, regControl) != true) return BMP180_ERROR; //error handler, collision on i2c bus
 
   /* set measurement delay */
   switch (_resolution)
   {
-    case BMP085_ULTRALOWPOWER:
+    case BMP180_ULTRALOWPOWER:
       delay(5);
       break;
-    case BMP085_STANDARD:
+
+    case BMP180_STANDARD:
       delay(8);
       break;
-    case BMP085_HIGHRES:
+
+    case BMP180_HIGHRES:
       delay(14);
       break;
-    case BMP085_ULTRAHIGHRES:
+
+    case BMP180_ULTRAHIGHRES:
       delay(26);
       break;
-   }
+  }
 
-  rawPressure = read16(BMP085_READ_RESULT);
+  /* read result msb + lsb */
+  rawPressure = read16(BMP180_READ_ADC_MSB);            //16-bits
+  if (rawPressure == BMP180_ERROR) return BMP180_ERROR; //error handler, collision on i2c bus
 
+  /* read result xlsb */
   rawPressure <<= 8;
-  rawPressure |= read8(BMP085_READ_RESULT + 2);
+  rawPressure |= read8(BMP180_READ_ADC_XLSB);           //19-bits
+
   rawPressure >>= (8 - _resolution);
 
   return rawPressure;
@@ -273,62 +392,48 @@ uint32_t BMP085_BMP180::readRawPressure(void)
 
 /**************************************************************************/
 /*
-    Computes B5
+    computeB5()
+
+    Computes B5 value
+
+    NOTE:
+    - to compensate raw/uncompensated temperature
+    - also used for compensated pressure calculation
 */
 /**************************************************************************/
-int32_t BMP085_BMP180::computeB5(int32_t UT)
+int32_t BMP180::computeB5(int32_t UT)
 {
-  int32_t X1 = (UT - (int32_t)_cal_coeff.BMP_AC6) * ((int32_t)_cal_coeff.BMP_AC5) >> 15;
-  int32_t X2 = ((int32_t)_cal_coeff.BMP_MC << 11) / (X1 + (int32_t)_cal_coeff.BMP_MD);
+  int32_t X1 = ((UT - (int32_t)_cal_coeff.bmpAC6) * (int32_t)_cal_coeff.bmpAC5) >> 15;
+  int32_t X2 = ((int32_t)_cal_coeff.bmpMC << 11) / (X1 + (int32_t)_cal_coeff.bmpMD);
 
   return X1 + X2;
 }
 
 /**************************************************************************/
 /*
-    Reads 8 bit value from the sensor register over I2C
+    read8()
+
+    Reads 8-bit value over I2C
 */
 /**************************************************************************/
-uint8_t BMP085_BMP180::read8(uint8_t reg)
+uint8_t BMP180::read8(uint8_t reg)
 {
-  int8_t  pollCounter = BMP085_POLL_LIMIT;
+  Wire.beginTransmission(BMP180_ADDRESS);
+  #if (ARDUINO >= 100)
+  Wire.write(reg);
+  #else
+  Wire.send(reg);
+  #endif
+  if (Wire.endTransmission(true) != 0) return BMP180_ERROR; //error handler, collision on i2c bus
 
-  do
-  {
-    pollCounter--;
-    if (pollCounter == 0)                                    //error handler
-    {
-      #ifdef BMP085_DEBUG_INFO
-      Serial.println("BMP085/BMP180: can't request a byte");
-      #endif
-      return BMP085_ERROR;
-    }
-    Wire.beginTransmission(BMP085_ADDRESS);
-    #if (ARDUINO >= 100)
-    Wire.write(reg);
-    #else
-    Wire.send(reg);
-    #endif
-  }
-  while (Wire.endTransmission(true) != 0);                   //true = stop message after transmission & releas the I2C bus
+  #if defined(_VARIANT_ARDUINO_STM32_)
+  Wire.requestFrom(BMP180_ADDRESS, 1);
+  #else
+  Wire.requestFrom(BMP180_ADDRESS, 1, true);                //true, stop message after transmission & releas i2c bus
+  #endif
+  if (Wire.available() != 1) return BMP180_ERROR;           //check "wire.h" rxBuffer & error handler, collision on i2c bus
 
-  pollCounter = BMP085_POLL_LIMIT;
-
-  do
-  {
-    pollCounter--;
-    if (pollCounter == 0)                                    //error handler
-    {
-      #ifdef BMP085_DEBUG_INFO
-      Serial.println("BMP085/BMP180: can't read a byte");
-      #endif
-      return BMP085_ERROR;
-    }
-    Wire.requestFrom(BMP085_ADDRESS, 1, true);               //true = stop message after transmission & releas the I2C bus
-  }
-  while (Wire.available() != 1);                             //check rxBuffer
-
-  /* read byte from "wire.h" buffer */
+  /* read byte from "wire.h" rxBuffer */
   #if (ARDUINO >= 100)
   return Wire.read();
   #else
@@ -338,53 +443,34 @@ uint8_t BMP085_BMP180::read8(uint8_t reg)
 
 /**************************************************************************/
 /*
-    Reads 16 bit value from the sensor register over I2C
+    read16()
+
+    Reads 16-bits value over I2C
 */
 /**************************************************************************/
-uint16_t BMP085_BMP180::read16(uint8_t reg)
+uint16_t BMP180::read16(uint8_t reg)
 {
-  int8_t   pollCounter = BMP085_POLL_LIMIT;
-  uint16_t value       = 0;
+  uint16_t value = 0;
 
-  do
-  {
-    pollCounter--;
-    if (pollCounter == 0)                                       //error handler
-    {
-      #ifdef BMP085_DEBUG_INFO
-      Serial.println("BMP085/BMP180: can't request two bytes");
-      #endif
-      return BMP085_ERROR;
-    }
-    Wire.beginTransmission(BMP085_ADDRESS);
-    #if (ARDUINO >= 100)
-    Wire.write(reg);
-    #else
-    Wire.send(reg);
-    #endif
-  }
-  while (Wire.endTransmission(true) != 0);
-
-  pollCounter = BMP085_POLL_LIMIT;
-
-  do
-  {
-    pollCounter--;
-    if (pollCounter == 0)                                       //error handler
-    {
-      #ifdef BMP085_DEBUG_INFO
-      Serial.println("BMP085/BMP180: can't read two bytes");
-      #endif
-      return BMP085_ERROR;
-    }
-    Wire.requestFrom(BMP085_ADDRESS, 2, true);                  //true = stop message after transmission & releas the I2C bus
-  }
-  while (Wire.available() != 2);                                //check rxBuffer
-
-  /* read 2 bytes from "wire.h" buffer */
+  Wire.beginTransmission(BMP180_ADDRESS);
   #if (ARDUINO >= 100)
-  value  = Wire.read() << 8;
-  value |= Wire.read();
+  Wire.write(reg);
+  #else
+  Wire.send(reg);
+  #endif
+  if (Wire.endTransmission(true) != 0) return BMP180_ERROR; //error handler, collision on i2c bus
+
+  #if defined(_VARIANT_ARDUINO_STM32_)
+  Wire.requestFrom(BMP180_ADDRESS, 2);
+  #else
+  Wire.requestFrom(BMP180_ADDRESS, 2, true);                //true, stop message after transmission & releas i2c bus
+  #endif
+  if (Wire.available() != 2) return BMP180_ERROR;           //check "wire.h" rxBuffer & error handler, collision on i2c bus
+
+  /* read 2-bytes from "wire.h" rxBuffer */
+  #if (ARDUINO >= 100)
+  value  = Wire.read() << 8;                                //read msb
+  value |= Wire.read();                                     //read lsb
   #else
   value  = Wire.receive() << 8;
   value |= Wire.receive();
@@ -395,31 +481,23 @@ uint16_t BMP085_BMP180::read16(uint8_t reg)
 
 /**************************************************************************/
 /*
-    Writes 8 bit value to the sensor register over I2C
+    write8()
+
+    Writes 8-bits value over I2C
 */
 /**************************************************************************/
-void BMP085_BMP180::write8(uint8_t reg, uint8_t value)
+bool BMP180::write8(uint8_t reg, uint8_t control)
 {
-  int8_t pollCounter = BMP085_POLL_LIMIT;
+  Wire.beginTransmission(BMP180_ADDRESS);
 
-  do
-  {
-    pollCounter--;
-    if (pollCounter == 0)                                  //error handler
-    {
-      #ifdef BMP085_DEBUG_INFO
-      Serial.println("BMP085/BMP180: can't write a byte");
-      #endif
-      return;
-    }
-    Wire.beginTransmission(BMP085_ADDRESS);
-    #if (ARDUINO >= 100)
-    Wire.write(reg);
-    Wire.write(value);
-    #else
-    Wire.send(reg);
-    Wire.send(value);
-    #endif
-  }
-  while (Wire.endTransmission(true) != 0);
+  #if (ARDUINO >= 100)
+  Wire.write(reg);
+  Wire.write(control);
+  #else
+  Wire.send(reg);
+  Wire.send(control);
+  #endif
+  
+  if (Wire.endTransmission(true) == 0) return true;
+                                       return false; //error handler, collision on i2c bus
 }
