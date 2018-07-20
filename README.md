@@ -25,5 +25,5 @@ Tested on:
 - Arduino ESP8266
 - Arduino STM32
 
-* EOC  pin is not used, shows the end of conversion
-* XCLR pin is not used, reset pin
+*EOC  pin is not used, shows the end of conversion
+*XCLR pin is not used, reset pin
