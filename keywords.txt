@@ -1,38 +1,46 @@
-##########################################
-# Syntax Coloring Map BMP180
-##########################################
+#######################################
+# Syntax Coloring Map BMP180 & BMP085
+#######################################
 
-##########################################
-# Datatypes			(KEYWORD1)
-##########################################
+#######################################
+# Datatypes	(KEYWORD1)
+#######################################
 
-##########################################
-# Methods and Functions		(KEYWORD2)
-##########################################
+#######################################
+# Methods and Functions	(KEYWORD2)
+#######################################
 
-begin				KEYWORD2
-getTemperature			KEYWORD2
-getPressure			KEYWORD2
-getSeaLevelPressure		KEYWORD2
-softReset			KEYWORD2
-readFirmwareVersion		KEYWORD2
-readDeviceID			KEYWORD2
+begin	KEYWORD2
+getTemperature	KEYWORD2
+getPressure	KEYWORD2
+getSeaLevelPressure	KEYWORD2
+softReset	KEYWORD2
+readFirmwareVersion	KEYWORD2
+readDeviceID	KEYWORD2
 
-getPressure_hPa			KEYWORD2
-getPressure_mmHg		KEYWORD2
-getPressure_inHg		KEYWORD2
-getSeaLevelPressure_hPa		KEYWORD2
+getPressure_hPa	KEYWORD2
+getPressure_mmHg	KEYWORD2
+getPressure_inHg	KEYWORD2
+getSeaLevelPressure_hPa	KEYWORD2
 getSeaLevelPressure_mmHg	KEYWORD2
 getSeaLevelPressure_inHg	KEYWORD2
-getForecast			KEYWORD2
+getForecast	KEYWORD2
 
 
-##########################################
-# Instances			(KEYWORD2)
-##########################################
-BMP180				KEYWORD2
-BMP180advanced			KEYWORD2
+#######################################
+# Instances	(KEYWORD2)
+#######################################
 
-##########################################
+BMP180	KEYWORD2
+BMP180advanced	KEYWORD2
+
+#######################################
 # Constants (LITERAL1)
-##########################################
+#######################################
+
+BMP180_ULTRALOWPOWER	LITERAL1
+BMP180_STANDARD	LITERAL1
+BMP180_HIGHRES	LITERAL1
+BMP180_ULTRAHIGHRES	LITERAL1
+
+BMP180_ERROR	LITERAL1
