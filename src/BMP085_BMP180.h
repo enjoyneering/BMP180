@@ -10,19 +10,17 @@
   written by : enjoyneering79
   sourse code: https://github.com/enjoyneering/
 
-  This sensor uses I2C bus to communicate, specials pins are required to interface
-  Board:                                    SDA                    SCL
-  Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5
-  Mega2560, Due............................ 20                     21
-  Leonardo, Micro, ATmega32U4.............. 2                      3
-  Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7
-  Blue Pill, STM32F103xxxx boards.......... PB7*                   PB6*
-  ESP8266 ESP-01:.......................... GPIO0/D5               GPIO2/D3
-  NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1
-  ESP32.................................... GPIO21                 GPIO22
-
-                                           *STM32F103xxxx pins PB6/PB7 are 5v tolerant, but
-                                            bi-directional logic level converter is recommended
+  This chip uses I2C bus to communicate, specials pins are required to interface
+  Board:                                    SDA                    SCL                    Level
+  Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5                     5v
+  Mega2560................................. 20                     21                     5v
+  Due, SAM3X8E............................. 20                     21                     3.3v
+  Leonardo, Micro, ATmega32U4.............. 2                      3                      5v
+  Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7    5v
+  Blue Pill, STM32F103xxxx boards.......... PB7                    PB6                    3.3v/5v
+  ESP8266 ESP-01........................... GPIO0/D5               GPIO2/D3               3.3v/5v
+  NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1               3.3v/5v
+  ESP32.................................... GPIO21/D21             GPIO22/D22             3.3v
 
   NOTE:
   - EOC  pin is not used, shows the end of conversion
@@ -69,46 +67,47 @@ typedef enum
 }
 BMP180_RESOLUTION;
 
+
 /* calibration registers */
 typedef enum
 {
-  BMP180_CAL_AC1 =               0xAA,  //ac1 pressure    computation
-  BMP180_CAL_AC2 =               0xAC,  //ac2 pressure    computation
-  BMP180_CAL_AC3 =               0xAE,  //ac3 pressure    computation
-  BMP180_CAL_AC4 =               0xB0,  //ac4 pressure    computation
-  BMP180_CAL_AC5 =               0xB2,  //ac5 temperature computation
-  BMP180_CAL_AC6 =               0xB4,  //ac6 temperature computation
-  BMP180_CAL_B1  =               0xB6,  //b1  pressure    computation
-  BMP180_CAL_B2  =               0xB8,  //b2  pressure    computation
-  BMP180_CAL_MB  =               0xBA,  //mb
-  BMP180_CAL_MC  =               0xBC,  //mc  temperature computation
-  BMP180_CAL_MD  =               0xBE   //md  temperature computation
+  BMP180_CAL_AC1_REG =                0xAA,  //ac1 pressure    computation
+  BMP180_CAL_AC2_REG =                0xAC,  //ac2 pressure    computation
+  BMP180_CAL_AC3_REG =                0xAE,  //ac3 pressure    computation
+  BMP180_CAL_AC4_REG =                0xB0,  //ac4 pressure    computation
+  BMP180_CAL_AC5_REG =                0xB2,  //ac5 temperature computation
+  BMP180_CAL_AC6_REG =                0xB4,  //ac6 temperature computation
+  BMP180_CAL_B1_REG  =                0xB6,  //b1  pressure    computation
+  BMP180_CAL_B2_REG  =                0xB8,  //b2  pressure    computation
+  BMP180_CAL_MB_REG  =                0xBA,  //mb
+  BMP180_CAL_MC_REG  =                0xBC,  //mc  temperature computation
+  BMP180_CAL_MD_REG  =                0xBE   //md  temperature computation
 }
-BMP180_CAL_REGISTERS;
+BMP180_CAL_REG;
 
-#define BMP180_GET_ID            0xD0   //device id register
-#define BMP180_GET_VERSION       0xD1   //device version register
+#define BMP180_GET_ID_REG             0xD0   //device id register
+#define BMP180_GET_VERSION_REG        0xD1   //device version register
 
-#define BMP180_START_SOFT_RESET  0xE0   //soft reset register
-#define BMP180_GET_SOFT_RESET    0xB6   //soft reset control
+#define BMP180_SOFT_RESET_REG         0xE0   //soft reset register
+#define BMP180_SOFT_RESET_CTRL        0xB6   //soft reset control
 
-#define BMP180_START_MEASURMENT  0xF4   //start measurment  register
-#define BMP180_READ_ADC_MSB      0xF6   //read adc msb  register
-#define BMP180_READ_ADC_LSB      0xF7   //read adc lsb  register
-#define BMP180_READ_ADC_XLSB     0xF8   //read adc xlsb register
+#define BMP180_START_MEASURMENT_REG   0xF4   //start measurment  register
+#define BMP180_READ_ADC_MSB_REG       0xF6   //read adc msb  register
+#define BMP180_READ_ADC_LSB_REG       0xF7   //read adc lsb  register
+#define BMP180_READ_ADC_XLSB_REG      0xF8   //read adc xlsb register
 
-/* BMP180_START_MEASURMENT controls */
-#define BMP180_GET_TEMPERATURE   0x2E   //get temperature control
-#define BMP180_GET_PRESSURE_OSS0 0x34   //get pressure oversampling 1 time/oss0 control
-#define BMP180_GET_PRESSURE_OSS1 0x74   //get pressure oversampling 2 time/oss1 control
-#define BMP180_GET_PRESSURE_OSS2 0xB4   //get pressure oversampling 4 time/oss2 control
-#define BMP180_GET_PRESSURE_OSS3 0xF4   //get pressure oversampling 8 time/oss3 control
+/* BMP180_START_MEASURMENT_REG controls */
+#define BMP180_GET_TEMPERATURE_CTRL   0x2E   //get temperature control
+#define BMP180_GET_PRESSURE_OSS0_CTRL 0x34   //get pressure oversampling 1 time/oss0 control
+#define BMP180_GET_PRESSURE_OSS1_CTRL 0x74   //get pressure oversampling 2 time/oss1 control
+#define BMP180_GET_PRESSURE_OSS2_CTRL 0xB4   //get pressure oversampling 4 time/oss2 control
+#define BMP180_GET_PRESSURE_OSS3_CTRL 0xF4   //get pressure oversampling 8 time/oss3 control
 
 /* misc */
-#define BMP180_ADDRESS           0x77   //i2c address
-#define BMP180_CHIP_ID           0x55   //id number
+#define BMP180_ADDRESS                0x77   //i2c address
+#define BMP180_CHIP_ID                0x55   //id number
 
-#define BMP180_ERROR             255    //returns 255, if communication error is occurred
+#define BMP180_ERROR                  255    //returns 255, if communication error is occurred
 
 /* to store calibration coefficients */
 typedef struct
@@ -149,7 +148,7 @@ class BMP180
 
 
  private:
-  BMP180_CAL_COEFF _cal_coeff;
+  BMP180_CAL_COEFF _calCoeff;
 
   uint8_t  _resolution;
 
