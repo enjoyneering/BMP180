@@ -1,11 +1,11 @@
 # Bosch BMP180 & BMP085
 This is an Arduino library for Bosch BMP180 & BMP085 barometric pressure & temperature sensor
 
-- Range:                  30,000Pa..110,000Pa / 0°C..+65°C 
-- Typ. resolution:        ±1Pa / ±0.1°C
-- Typ. accuracy:          ±100Pa / ±1.0°C
-- Typ. relative accuracy: ±12Pa / xx°C
 - Supply voltage:         1.8v - 3.6v
+- Range:                  30,000Pa..110,000Pa / 0°C..+65°C
+- Typ. resolution:        1Pa    / 0.1°C
+- Typ. accuracy:          ±100Pa / ±1.0°C
+- Typ. relative accuracy: ±12Pa  / xx°C
 
 Supports *all sensors features & more:
 
