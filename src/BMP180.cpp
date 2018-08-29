@@ -4,8 +4,8 @@
   temperature sensor
   
   Range                 typ. resolution   typ. accuracy   typ. relative accuracy
-  30,000Pa..110,000Pa   ±1Pa              ±100Pa          ±12Pa
-  0°C..+65°C            ±0.1°C            ±1.0°C          xx
+  30,000Pa..110,000Pa   1Pa               ±100Pa          ±12Pa
+  0°C..+65°C            0.1°C             ±1.0°C          xx
 
   written by : enjoyneering79
   sourse code: https://github.com/enjoyneering/
