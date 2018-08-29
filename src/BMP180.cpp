@@ -128,6 +128,8 @@ int32_t BMP180::getPressure(void)
   X3 = ((X1 + X2) + 2) >> 2;
   B4 = ((uint32_t)_calCoeff.bmpAC4 * (X3 + 32768L)) >> 15;
   B7 = (UP - B3) * (50000UL >> _resolution);
+  
+  if (B4 == 0) return BMP180_ERROR;                                     //safety check, avoiding division by zero
 
   if   (B7 < 0x80000000) pressure = (B7 * 2) / B4;
   else                   pressure = (B7 / B4) * 2;
