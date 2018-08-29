@@ -91,7 +91,7 @@ bool BMP180::begin(void)
     Calculates compensated pressure, in Pa
 
     NOTE:
-    - resolutin ±1Pa with accuracy ±150Pa at range 30,000Pa..110,000Pa
+    - resolutin 1Pa with accuracy ±150Pa at range 30,000Pa..110,000Pa
 */
 /**************************************************************************/
 int32_t BMP180::getPressure(void)
@@ -148,7 +148,7 @@ int32_t BMP180::getPressure(void)
     Calculates compensated temperature, in °C
 
     NOTE:
-    - resolution ±0.1°C with accuracy ±1.0°C at range 0°C..+65°C
+    - resolution 0.1°C with accuracy ±1.0°C at range 0°C..+65°C
 */
 /**************************************************************************/
 float BMP180::getTemperature(void)
