@@ -1,40 +1,46 @@
 /***************************************************************************************************/
 /*
-  This is an Arduino basic library for Bosch BMP180 & BMP085 barometric pressure &
-  temperature sensor
-  
-  Range                 typ. resolution   typ. accuracy   typ. relative accuracy
-  30,000Pa..110,000Pa   1Pa               ±100Pa          ±12Pa
-  0°C..+65°C            0.1°C             ±1.0°C          xx
+   This is an Arduino basic library for Bosch BMP180 & BMP085 barometric pressure &
+   temperature sensor
 
-  written by : enjoyneering79
-  sourse code: https://github.com/enjoyneering/
+   Power supply voltage:   1.8v - 3.6v
+   Range:                  30,000Pa..110,000Pa at -40°C..+85°C 
+   Typ. resolution:        1Pa     / 0.1°C
+   Typ. accuracy:          ±100Pa* / ±1.0°C* at 0°C..+65°C
+   Typ. relative accuracy: ±12Pa   / xx°C
+   Duty cycle:             10% active & 90% inactive, to prevent self heating
 
-  This chip uses I2C bus to communicate, specials pins are required to interface
-  Board:                                    SDA                    SCL                    Level
-  Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5                     5v
-  Mega2560................................. 20                     21                     5v
-  Due, SAM3X8E............................. 20                     21                     3.3v
-  Leonardo, Micro, ATmega32U4.............. 2                      3                      5v
-  Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7    5v
-  Blue Pill, STM32F103xxxx boards.......... PB7                    PB6                    3.3v/5v
-  ESP8266 ESP-01........................... GPIO0/D5               GPIO2/D3               3.3v/5v
-  NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1               3.3v/5v
-  ESP32.................................... GPIO21/D21             GPIO22/D22             3.3v
+                          *sensor is sensitive to direct light, which can affect
+                           the accuracy of the measurement
 
-  NOTE:
-  - EOC  pin is not used, shows the end of conversion
-  - XCLR pin is not used, reset pin
+   written by : enjoyneering79
+   sourse code: https://github.com/enjoyneering/
 
-  Frameworks & Libraries:
-  ATtiny Core           - https://github.com/SpenceKonde/ATTinyCore
-  ESP32 Core            - https://github.com/espressif/arduino-esp32
-  ESP8266 Core          - https://github.com/esp8266/Arduino
-  ESP8266 I2C lib fixed - https://github.com/enjoyneering/ESP8266-I2C-Driver
-  STM32 Core            - https://github.com/rogerclarkmelbourne/Arduino_STM32
 
-  GNU GPL license, all text above must be included in any redistribution, see link below for details:
-  - https://www.gnu.org/licenses/licenses.html
+   This chip uses I2C bus to communicate, specials pins are required to interface
+   Board:                                    SDA                    SCL                    Level
+   Uno, Mini, Pro, ATmega168, ATmega328..... A4                     A5                     5v
+   Mega2560................................. 20                     21                     5v
+   Due, SAM3X8E............................. 20                     21                     3.3v
+   Leonardo, Micro, ATmega32U4.............. 2                      3                      5v
+   Digistump, Trinket, ATtiny85............. 0/physical pin no.5    2/physical pin no.7    5v
+   Blue Pill, STM32F103xxxx boards.......... PB7                    PB6                    3.3v/5v
+   ESP8266 ESP-01........................... GPIO0/D5               GPIO2/D3               3.3v/5v
+   NodeMCU 1.0, WeMos D1 Mini............... GPIO4/D2               GPIO5/D1               3.3v/5v
+   ESP32.................................... GPIO21/D21             GPIO22/D22             3.3v
+
+   NOTE:
+   - EOC  pin is not used, shows the end of conversion
+   - XCLR pin is not used, reset pin
+
+   Frameworks & Libraries:
+   ATtiny  Core          - https://github.com/SpenceKonde/ATTinyCore
+   ESP32   Core          - https://github.com/espressif/arduino-esp32
+   ESP8266 Core          - https://github.com/esp8266/Arduino
+   STM32   Core          - https://github.com/rogerclarkmelbourne/Arduino_STM32
+
+   GNU GPL license, all text above must be included in any redistribution,
+   see link for details  - https://www.gnu.org/licenses/licenses.html
 */
 /***************************************************************************************************/
 
