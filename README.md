@@ -1,3 +1,5 @@
+[![license-badge][]][license] ![version] [![stars][]][stargazers]
+
 # Bosch BMP180 & BMP085
 This is an Arduino library for Bosch BMP180 & BMP085 barometric pressure & temperature sensor
 
@@ -29,3 +31,9 @@ Tested on:
 *EOC  pin is not used, shows the end of conversion
 
 *XCLR pin is not used, reset pin
+
+[license]:       https://choosealicense.com/licenses/gpl-3.0/
+[license-badge]: https://img.shields.io/aur/license/yaourt.svg
+[version]:       https://img.shields.io/badge/Version-1.4.0-green.svg
+[stars]:         https://img.shields.io/github/stars/enjoyneering/BMP180.svg
+[stargazers]:    https://github.com/enjoyneering/BMP180/stargazers
