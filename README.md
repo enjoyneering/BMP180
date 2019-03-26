@@ -1,4 +1,4 @@
-[![license-badge][]][license] ![version] [![stars][]][stargazers] [![GitHub issues][]][issues]
+[![license-badge][]][license] ![version] [![stars][]][stargazers] [![github-issues][]][issues]
 
 # Bosch BMP180 & BMP085
 This is an Arduino library for Bosch BMP180 & BMP085 barometric pressure & temperature sensor
@@ -9,10 +9,10 @@ This is an Arduino library for Bosch BMP180 & BMP085 barometric pressure & tempe
 - Typ. accuracy:          ±100Pa / ±1.0°C
 - Typ. relative accuracy: ±12Pa  / xx°C
 
-Supports *all sensors features & more:
+Supports all* sensors features & more:
 
-- Read & calculate compensated temperature, in °C
-- Read & calculate compensated barometric pressure, in Pa
+- Read & calculate compensated temperature**, in °C
+- Read & calculate compensated barometric pressure**, in Pa
 - Reset
 - Read chip ID
 - Read chip FW version
@@ -32,10 +32,12 @@ Tested on:
 
 *XCLR pin is not used, reset pin
 
+**Sensor returns 255, if there is a CRC8 mismatch or a communication error has occurred
+
 [license-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [license]:       https://choosealicense.com/licenses/gpl-3.0/
 [version]:       https://img.shields.io/badge/Version-1.2.1-green.svg
 [stars]:         https://img.shields.io/github/stars/enjoyneering/BMP180.svg
 [stargazers]:    https://github.com/enjoyneering/BMP180/stargazers
-[GitHub issues]: https://img.shields.io/github/issues/enjoyneering/BMP180.svg
+[github-issues]: https://img.shields.io/github/issues/enjoyneering/BMP180.svg
 [issues]:        https://github.com/enjoyneering/BMP180/issues/
