@@ -32,7 +32,7 @@ Tested on:
 
 *XCLR pin is not used, reset pin
 
-**Sensor returns 255, if there is a CRC8 mismatch or a communication error has occurred
+**Sensor returns 255, if there is a communication error has occurred
 
 [license-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [license]:       https://choosealicense.com/licenses/gpl-3.0/
