@@ -1,4 +1,4 @@
-[![license-badge][]][license] ![version] [![stars][]][stargazers] ![hit-count][]][count] [![github-issues][]][issues]
+[![license-badge][]][license] ![version] [![stars][]][stargazers] [![hit-count][]][count] [![github-issues][]][issues]
 
 # Bosch BMP180 & BMP085
 This is an Arduino library for Bosch BMP180 & BMP085 barometric pressure & temperature sensor
