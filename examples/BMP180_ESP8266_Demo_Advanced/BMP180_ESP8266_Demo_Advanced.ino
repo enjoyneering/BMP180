@@ -61,7 +61,7 @@ void setup()
 
   Serial.begin(115200);
 
-  while (myBMP.begin(D1, D2) != true) //sda, scl
+  while (myBMP.begin(D2, D1) != true) //sda, scl
   {
     Serial.println(F("Bosch BMP180/BMP085 is not connected or fail to read calibration coefficients"));
     delay(5000);
