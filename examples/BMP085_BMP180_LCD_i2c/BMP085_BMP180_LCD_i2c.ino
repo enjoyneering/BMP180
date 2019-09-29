@@ -152,7 +152,7 @@ void loop()
   lcd.setCursor(2, 1);
   if   (value != BMP180_ERROR) lcd.print(value);
   else                         lcd.print(F("xx"));
-  lcd.print(F("hPa"));
+  lcd.print(F("Pa"));
   lcd.write(LCD_SPACE_SYMBOL);
 
   /* prints sea level pressure text */
@@ -161,7 +161,7 @@ void loop()
   lcd.setCursor(2, 2);
   if   (value != BMP180_ERROR) lcd.print(value);
   else                         lcd.print(F("xx"));
-  lcd.print(F("hPa"));
+  lcd.print(F("Pa"));
   lcd.write(LCD_SPACE_SYMBOL);
 
   delay(5000);
