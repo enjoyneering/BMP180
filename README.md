@@ -21,6 +21,13 @@ Supports all* sensors features & more:
 - Convert sea level pressure to hPa, mmHg, inHg
 - Simple forecast: thunderstorm, rain, cloudy, partly cloudy, clear, sunny
 
+Important recommendations:
+
+- Measurement of atmospheric pressure depends on the ambient temperature. Avoid placing the BMP180 in front of a heat source.
+- Do not expose the BMP180 to airflow from a fan, as this may lead to unstable measurements.
+- The sensor is sensitive to moisture and is not recommended for direct contact with water.
+- BMP180 is sensitive to light. Do not expose the sensor to direct light.
+- Do not exceed the supply voltage.
 
 Tested on:
 
